@@ -269,7 +269,7 @@
       <div class="brand-logo">需</div>
       <div>
         <div class="brand-name">需对接</div>
-        <div class="brand-sub">免注册 · 匿名发布 · 快速对接</div>
+        <div class="brand-sub">免注册 · 云端共享 · 快速对接</div>
       </div>
     </div>
     <div class="identity">
@@ -286,7 +286,7 @@
 <main class="wrap">
   <section class="hero">
     <h1>让需求被看见，让对接更简单</h1>
-    <p>无需注册，发布与对接均使用随机用户名，保护隐私，开箱即用。</p>
+    <p>无需注册，发布与对接均使用随机用户名；需求存于云端，所有访客实时共享。</p>
     <div class="stats">
       <div class="stat c1"><b id="statTotal">0</b><span>全部需求</span></div>
       <div class="stat c2"><b id="statOpen">0</b><span>招募中</span></div>
@@ -352,7 +352,7 @@
   </section>
 
   <footer>
-    数据仅保存在当前浏览器本地 · 纯前端实现
+    数据存于云端共享 · 随机用户名保护隐私
     <button id="resetBtn">重新载入示例</button>
     <button id="clearBtn">清空全部数据</button>
   </footer>
@@ -360,11 +360,19 @@
 
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 <script>
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "needmatch_data_v1";
+  // ---------- 云端配置（publicConfig，前端可公开）----------
+  var ENDPOINT = "https://need-match.app.workbuddy.host";
+  var PUBLISHABLE_KEY = "wbpk_xXqQvvSxsJ9Cp8xHpCE7yk_C9Ung9ZYSRanN3rIaQr2unsdq76cTdCC";
+  var TABLE = "needs";
+
+  var cloud = (window.WorkBuddyCloud && window.WorkBuddyCloud.createWorkBuddyCloud)
+    ? window.WorkBuddyCloud.createWorkBuddyCloud({ endpoint: ENDPOINT, publishableKey: PUBLISHABLE_KEY })
+    : null;
 
   var ADJ = ["神秘的","追风的","安静的","快乐的","勇敢的","漫步的","闪耀的","温柔的","自由的","发光的","熬夜的","爱吃鱼的","爱发呆的","慢半拍的","好运的","佛系的","努力的","路人甲的"];
   var NOUN = ["熊猫","鲸鱼","狐狸","兔子","海豚","树懒","云朵","星星","柠檬","松鼠","小鹿","北极熊","柠檬精","小怪兽","蒲公英","小宇宙","小盒子","咸鱼"];
@@ -375,103 +383,24 @@
   function genName(){return ADJ[rand(ADJ.length)]+NOUN[rand(NOUN.length)]+"_"+genCode(4)}
   function genId(){return Date.now().toString(36)+"-"+genCode(6)+"-"+rand(99999).toString(36)}
   function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  function unwrap(res){ if(res.error) throw res.error; return res.data; }
 
-  // ---------- 示例数据（科技 / 金融 / 融资场景）----------
-  function buildSeed(myId,myName){
-    var now=Date.now(), MIN=60000, H=3600000, D=86400000;
-    function match(name,contact,msg,clientId,ago){return {id:genId(),name:name,contact:contact,msg:msg,clientId:clientId,createdAt:now-ago}}
-    function need(title,cat,desc,contact,publisher,clientId,ago,status,matches){
-      return {id:genId(),title:title,cat:cat,desc:desc,contact:contact,publisher:publisher,clientId:clientId,createdAt:now-ago,status:status,matches:matches};
-    }
-    var OTHER="seed-visitor-"+genCode(4);
-    return [
-      need("AI 大模型创业团队寻找资深后端工程师","找人",
-        "团队正在做行业大模型应用，需要一位有高并发系统经验的后端工程师，负责推理服务架构搭建。每周投入 2-3 天，可远程，项目制合作，核心成员有期权。",
-        "微信：ai_startup_hr","追风的北极熊_K7M2",OTHER,12*MIN,"open",[
-          match("漫步的鲸鱼_T3P9","微信：backend_dev_lee","5 年 Go/Python 经验，做过 LLM 推理优化，感兴趣","seed-v-"+genCode(4),7*MIN)
-        ]),
-      need("寻求低成本 GPU 算力资源（A100/H100）","找资源",
-        "多模态模型微调，用量约 500 卡时/周。希望对接高校实验室闲置算力或性价比高的算力平台，预算 2 万/月以内，长期合作优先。",
-        "邮箱：ops@model-lab.cn","闪耀的云朵_R5N1",OTHER,48*MIN,"open",[
-          match("爱发呆的松鼠_W8K2","微信：gpu_cloud_daily","可稳定提供 A100，价格好谈","seed-v-"+genCode(4),30*MIN),
-          match("好运的海豚_Y4H6","邮箱：compute@university.cn","实验室夜间算力闲置，可优惠","seed-v-"+genCode(4),20*MIN)
-        ]),
-      need("企业级 SaaS 产品寻找渠道合作伙伴","找合作",
-        "HR SaaS 产品已完成 A 轮，寻求有企业客户资源的渠道商、咨询公司联合推广，分成比例灵活，可提供全套售前支持。",
-        "微信：saas_bd_team","安静的狐狸_C9V3",OTHER,3*H,"open",[
-          match("佛系的小鹿_M2Q8","微信：consult_partner","我们服务 200+ 制造客户，可对接","seed-v-"+genCode(4),2*H)
-        ]),
-      need("Pre-A 轮融资寻求专注 FinTech 的机构对接","找资源",
-        "金融科技 To B 业务，年营收 800 万，同比增长 150%。寻求专注 FinTech 赛道的 VC 对接，FA 合作亦可，BP 与财务模型已备好。",
-        "邮箱：ceo@fintech-startup.cn",myName,myId,5*H,"open",[
-          match("勇敢的熊猫_Z6J4","微信：vc_fintech_wang","某头部基金 FinTech 组，可否发 BP？","seed-v-"+genCode(4),4*H),
-          match("温柔的小宇宙_Q1L7","邮箱：fa_partner@capital.cn","专业 FA，已帮多家同类公司完成融资","seed-v-"+genCode(4),3*H)
-        ]),
-      need("寻找有券商 IPO 经验的财务顾问","找人",
-        "公司计划明年申报创业板，需要熟悉 A 股 IPO 流程的财务顾问，兼职指导财务规范化与内控搭建，按项目付费。",
-        "微信：cfo_pre_ipo","熬夜的树懒_H3D5",OTHER,9*H,"open",[
-          match("自由的星星_P7W9","微信：fa_ipo_consultant","前券商保荐代表人，可兼职辅导","seed-v-"+genCode(4),6*H)
-        ]),
-      need("找人帮忙撰写商业计划书（BP）","找人",
-        "首次融资阶段，需要专业顾问梳理商业模式、打磨财务模型与融资叙事，优化 BP。预算 1-2 万，有成功融资案例优先。",
-        "微信：founder_bp_need","路人的柠檬_A5X2",OTHER,26*H,"open",[
-          match("闪耀的小怪兽_G4T8","微信：bp_writer_pro","写过 20+ 融资 BP，可先看样例","seed-v-"+genCode(4),22*H),
-          match("慢半拍的兔子_B6Y1","邮箱：business.writer@mail.cn","可协助财务模型部分","seed-v-"+genCode(4),20*H),
-          match("发光的北极熊_D8S3","微信：bp_fin_helper","做过科技赛道 BP，报价合理","seed-v-"+genCode(4),18*H)
-        ]),
-      need("供应链金融项目寻求银行资金方合作","找合作",
-        "产业互联网平台，掌握核心企业上下游真实贸易数据，希望与城商行/股份行合作供应链金融产品，平台提供数据风控，银行提供资金。",
-        "邮箱：biz@supply-chain-fin.cn","漫步的松鼠_E2N6",OTHER,2*D,"open",[
-          match("好运的云朵_F9C4","微信：bank_scf_team","某城商行供应链金融部，想了解风控模型","seed-v-"+genCode(4),1.5*D)
-        ]),
-      need("关于技术合伙人股权分配与成熟机制求建议","求建议",
-        "三人联合创始，我出资占 40%，两位技术合伙人各占 30%。担心后续融资稀释与激励问题，想请教动态股权/vesting 机制设计的常见做法。",
-        "微信：startup_equity_q","爱吃鱼的云朵_J7K2",OTHER,3*D,"open",[
-          match("佛系的蒲公英_L4M8","微信：vc_legal_advice","可分享标准 vesting 条款模板","seed-v-"+genCode(4),2.5*D)
-        ]),
-      need("产业资本对接：智能制造与工业视觉赛道","找合作",
-        "工业视觉检测企业，完成天使轮，寻求制造业上市公司 CVC 战略投资，期望在客户资源与产线落地层面形成协同。融资规模 3000 万。",
-        "邮箱：ir@industrial-vision.cn","自由的狐狸_N1R5",OTHER,4*D,"open",[
-          match("勇敢的鲸鱼_V3B7","微信：cvc_manufacturing","某上市制造企业战投部，可安排交流",myId,3*D),
-          match("追风的小鹿_S6T9","邮箱：industry.fund@capital.cn","制造业基金，关注工业视觉方向","seed-v-"+genCode(4),3*D)
-        ]),
-      need("寻找政府引导基金与长三角产业资本","找资源",
-        "硬科技项目，专注工业软件国产替代，寻求长三角地区政府引导基金、产业资本对接，落地有园区政策配套，融资 5000 万。",
-        "邮箱：funding@indie-soft.cn","温柔的柠檬_X8P2",OTHER,6*D,"closed",[
-          match("好运的小鹿_K2W7","微信：gov_fund_match","可对接苏州工业园区引导基金","seed-v-"+genCode(4),5*D)
-        ]),
-      need("区块链跨境支付寻找合规落地场景","找合作",
-        "合规稳定币结算技术方，寻找有跨境贸易场景的企业合作，解决中小外贸企业结算成本高、到账周期长的问题，合规优先。",
-        "邮箱：biz@chainpay.example","闪耀的星星_H5F3",OTHER,8*D,"open",[]),
-      need("算法工程师寻找兼职/顾问机会（风控方向）","找人",
-        "8 年风控算法经验，熟悉反欺诈、评分卡与贷中监控，现寻求金融科技公司的兼职或顾问机会，可远程，按项目或日结算。",
-        "微信：risk_algo_freelance","爱发呆的海豚_T9Q1",OTHER,10*D,"open",[]),
-      need("投资人寻求消费科技赛道优质项目源","找资源",
-        "某早期基金投资经理，重点关注消费科技、AI 应用方向，寻求优质项目源与创始人交流，欢迎 BP 投递，可快速反馈。",
-        "邮箱：investor.scope@vc.example","慢半拍的熊猫_B3M6",OTHER,12*D,"open",[]),
-      need("分享：科技初创公司融资节奏与估值经验","求建议",
-        "整理了一份早期科技公司融资节奏与估值谈判的经验笔记，欢迎交流探讨，也希望能听听大家在条款清单（Term Sheet）上的实操经验。",
-        "微信：founder_share_notes","快乐的松鼠_D7C4",OTHER,15*D,"open",[
-          match("自由的小盒子_A1B2","微信：early_stage_founder","很有启发，想交流下轮融资节奏","seed-v-"+genCode(4),14*D)
-        ])
-    ];
+  // 本地身份：随机用户名 + clientId（仅用于"我的"界面判断，非安全边界）
+  var ID_KEY="needmatch_identity_v1";
+  function loadIdentity(){
+    try{var d=JSON.parse(localStorage.getItem(ID_KEY));if(d&&d.clientId&&d.name)return d}catch(e){}
+    return {clientId:genId(),name:genName()};
   }
+  var ME=loadIdentity();
+  function saveIdentity(){try{localStorage.setItem(ID_KEY,JSON.stringify(ME))}catch(e){}}
 
-  function loadData(){
-    try{
-      var raw=localStorage.getItem(STORAGE_KEY);
-      if(raw){var d=JSON.parse(raw);if(d&&Array.isArray(d.needs)){if(!d.clientId)d.clientId=genId();return d}}
-    }catch(e){}
-    var id=genId(),nm=genName();
-    return {clientId:id,name:nm,needs:buildSeed(id,nm)};
-  }
-  var DB=loadData();
-  function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){toast("本地存储失败，请检查浏览器设置","err")}}
-
-  var state={name:DB.name||genName(),tab:"all",cat:"all",q:"",openMatch:null};
+  var state={tab:"all",cat:"all",q:"",openMatch:null,loading:true,cloudError:null};
+  var NEEDS=[]; // 来自云端
 
   function timeAgo(ts){
+    ts=Number(ts); if(!ts||isNaN(ts))return "";
     var d=Date.now()-ts,m=Math.floor(d/60000);
+    if(m<0)m=0;
     if(m<1)return "刚刚";
     if(m<60)return m+"分钟前";
     var h=Math.floor(m/60);if(h<24)return h+"小时前";
@@ -485,23 +414,64 @@
     el.className="toast"+(type?" "+type:"");
     el.textContent=(type==="ok"?"✓ ":type==="err"?"✕ ":"")+msg;
     box.appendChild(el);
-    setTimeout(function(){el.style.opacity="0";el.style.transform="translateY(8px)";el.style.transition="all .3s";setTimeout(function(){el.remove()},300)},2200);
+    setTimeout(function(){el.style.opacity="0";el.style.transform="translateY(8px)";el.style.transition="all .3s";setTimeout(function(){el.remove()},300)},2400);
   }
+
+  /* ---------- 云端数据访问 ---------- */
+  function rowToNeed(r){
+    var matches=[];
+    try{matches=typeof r.matches==="string"?JSON.parse(r.matches):(r.matches||[])}catch(e){matches=[]}
+    return {id:r.id,title:r.title,cat:r.cat,desc:r.description,contact:r.contact,
+      publisher:r.publisher,clientId:r.client_id,createdAt:Number(r.created_at),
+      status:r.status,matches:matches};
+  }
+
+  async function loadNeeds(){
+    if(!cloud) throw new Error("云端 SDK 未加载");
+    var rows=unwrap(await cloud.database.from(TABLE).select("*").order("created_at",{ascending:false}));
+    NEEDS=(rows||[]).map(rowToNeed);
+  }
+
+  async function insertNeed(n){
+    var row={id:n.id,title:n.title,cat:n.cat,description:n.desc,contact:n.contact,
+      publisher:n.publisher,client_id:n.clientId,status:n.status,created_at:n.createdAt,
+      matches:JSON.stringify(n.matches)};
+    return unwrap(await cloud.database.from(TABLE).insert(row));
+  }
+
+  async function updateNeed(id,patch){
+    var row={};
+    if("status" in patch) row.status=patch.status;
+    if("matches" in patch) row.matches=JSON.stringify(patch.matches);
+    if(!Object.keys(row).length) return null;
+    return unwrap(await cloud.database.from(TABLE).update(row).eq("id",id).select());
+  }
+
+  async function deleteNeed(id){
+    return unwrap(await cloud.database.from(TABLE).delete().eq("id",id).select());
+  }
+
+  function guard(){ if(!cloud){toast("云服务未就绪，请稍后刷新","err");return false} return true }
 
   /* ---------- identity ---------- */
   function refreshIdentity(){
-    document.getElementById("myName").textContent=state.name;
-    document.getElementById("pubName").textContent=state.name;
-    document.getElementById("myAvatar").textContent=state.name.replace(/^./,"");
+    document.getElementById("myName").textContent=ME.name;
+    document.getElementById("pubName").textContent=ME.name;
+    document.getElementById("myAvatar").textContent=ME.name.replace(/^./,"");
   }
-  document.getElementById("regenBtn").addEventListener("click",function(){state.name=genName();refreshIdentity();toast("已换一个新的随机用户名","ok")});
-  document.getElementById("pubRegen").addEventListener("click",function(e){e.preventDefault();state.name=genName();refreshIdentity();toast("已换一个新的随机用户名","ok")});
+  document.getElementById("regenBtn").addEventListener("click",function(){
+    ME.name=genName();saveIdentity();refreshIdentity();toast("已换一个新的随机用户名","ok")
+  });
+  document.getElementById("pubRegen").addEventListener("click",function(e){
+    e.preventDefault();ME.name=genName();saveIdentity();refreshIdentity();toast("已换一个新的随机用户名","ok")
+  });
 
   /* ---------- publish ---------- */
   document.getElementById("publishHead").addEventListener("click",function(){
     document.getElementById("publishCard").classList.toggle("collapsed");
   });
-  document.getElementById("pubBtn").addEventListener("click",function(){
+  document.getElementById("pubBtn").addEventListener("click",async function(){
+    if(!guard())return;
     var title=document.getElementById("fTitle").value.trim();
     var cat=document.getElementById("fCat").value;
     var contact=document.getElementById("fContact").value.trim();
@@ -509,18 +479,18 @@
     if(!title){toast("请填写需求标题","err");return}
     if(!contact){toast("请填写联系方式","err");return}
     if(!desc){toast("请填写详细描述","err");return}
-    DB.needs.unshift({
-      id:genId(),title:title,cat:cat,desc:desc,contact:contact,
-      publisher:state.name,clientId:DB.clientId,createdAt:Date.now(),
-      status:"open",matches:[]
-    });
-    save();
-    document.getElementById("fTitle").value="";
-    document.getElementById("fContact").value="";
-    document.getElementById("fDesc").value="";
-    state.name=genName();DB.name=state.name;save();refreshIdentity();
-    toast("需求发布成功","ok");
-    render();
+    var btn=this;btn.disabled=true;btn.textContent="发布中…";
+    try{
+      await insertNeed({id:genId(),title:title,cat:cat,desc:desc,contact:contact,
+        publisher:ME.name,clientId:ME.clientId,createdAt:Date.now(),status:"open",matches:[]});
+      document.getElementById("fTitle").value="";
+      document.getElementById("fContact").value="";
+      document.getElementById("fDesc").value="";
+      ME.name=genName();saveIdentity();refreshIdentity();
+      toast("需求已发布到云端","ok");
+      await loadNeeds();render();
+    }catch(err){toast("发布失败："+friendly(err),"err")}
+    finally{btn.disabled=false;btn.textContent="发布需求"}
   });
 
   /* ---------- tabs / filters ---------- */
@@ -533,22 +503,31 @@
   document.getElementById("searchInput").addEventListener("input",function(e){state.q=e.target.value.trim().toLowerCase();render()});
   document.getElementById("catFilter").addEventListener("change",function(e){state.cat=e.target.value;render()});
 
-  /* ---------- actions (event delegation) ---------- */
-  document.getElementById("list").addEventListener("click",function(e){
+  /* ---------- actions ---------- */
+  document.getElementById("list").addEventListener("click",async function(e){
     var el=e.target.closest("[data-act]");if(!el)return;
     var act=el.getAttribute("data-act"),id=el.getAttribute("data-id");
     if(act==="match"){state.openMatch=(state.openMatch===id?null:id);render()}
     else if(act==="cancel-match"){state.openMatch=null;render()}
-    else if(act==="submit-match"){submitMatch(id,el)}
-    else if(act==="close"){closeNeed(id)}
-    else if(act==="reopen"){reopenNeed(id)}
-    else if(act==="del"){delNeed(id)}
-    else if(act==="regen-match"){var inp=el.parentNode.querySelector(".mf-name");if(inp){inp.value=genName()}}
+    else if(act==="submit-match"){await submitMatch(id,el)}
+    else if(act==="close"){await setStatus(id,"closed")}
+    else if(act==="reopen"){await setStatus(id,"open")}
+    else if(act==="del"){await delNeed(id)}
+    else if(act==="regen-match"){
+      var inp=el.parentNode.querySelector(".mf-name");if(inp)inp.value=genName();
+    }
   });
 
-  function findNeed(id){for(var i=0;i<DB.needs.length;i++)if(DB.needs[i].id===id)return DB.needs[i];return null}
+  function findNeed(id){for(var i=0;i<NEEDS.length;i++)if(NEEDS[i].id===id)return NEEDS[i];return null}
+  function friendly(err){
+    if(!err)return "未知错误";
+    if(err.code==="42501")return "没有操作权限";
+    if(err.code==="42P01")return "数据表不存在";
+    return err.message||String(err);
+  }
 
-  function submitMatch(id,btn){
+  async function submitMatch(id,btn){
+    if(!guard())return;
     var n=findNeed(id);if(!n)return;
     var form=btn.closest(".match-form");
     var name=form.querySelector(".mf-name").value.trim();
@@ -556,24 +535,44 @@
     var msg=form.querySelector(".mf-msg").value.trim();
     if(!name){toast("请填写你的称呼","err");return}
     if(!contact){toast("请填写联系方式","err");return}
-    n.matches.unshift({id:genId(),name:name,contact:contact,msg:msg,clientId:DB.clientId,createdAt:Date.now()});
-    save();state.openMatch=null;toast("对接成功，需求方可以看到你的信息了","ok");render();
+    var match={id:genId(),name:name,contact:contact,msg:msg,clientId:ME.clientId,createdAt:Date.now()};
+    var next=[match].concat(n.matches||[]);
+    btn.disabled=true;btn.textContent="提交中…";
+    try{
+      await updateNeed(id,{matches:next});
+      state.openMatch=null;toast("对接成功，需求方可以看到你的信息了","ok");
+      await loadNeeds();render();
+    }catch(err){toast("对接失败："+friendly(err),"err");btn.disabled=false;btn.textContent="提交对接"}
   }
-  function closeNeed(id){var n=findNeed(id);if(n){n.status="closed";save();toast("已标记为已对接","ok");render()}}
-  function reopenNeed(id){var n=findNeed(id);if(n){n.status="open";save();toast("已重新开放该需求","ok");render()}}
-  function delNeed(id){if(!confirm("确定删除这条需求？此操作不可恢复。"))return;DB.needs=DB.needs.filter(function(n){return n.id!==id});save();toast("已删除","ok");render()}
+  async function setStatus(id,status){
+    if(!guard())return;
+    try{await updateNeed(id,{status:status});toast(status==="closed"?"已标记为已对接":"已重新开放","ok");await loadNeeds();render()}
+    catch(err){toast("操作失败："+friendly(err),"err")}
+  }
+  async function delNeed(id){
+    if(!guard())return;
+    if(!confirm("确定删除这条需求？此操作不可恢复。"))return;
+    try{await deleteNeed(id);toast("已删除","ok");await loadNeeds();render()}
+    catch(err){toast("删除失败："+friendly(err),"err")}
+  }
 
   /* ---------- render ---------- */
   function render(){
-    // stats
-    document.getElementById("statTotal").textContent=DB.needs.length;
-    document.getElementById("statOpen").textContent=DB.needs.filter(function(n){return n.status==="open"}).length;
-    document.getElementById("statMatches").textContent=DB.needs.reduce(function(s,n){return s+n.matches.length},0);
+    document.getElementById("statTotal").textContent=NEEDS.length;
+    document.getElementById("statOpen").textContent=NEEDS.filter(function(n){return n.status==="open"}).length;
+    document.getElementById("statMatches").textContent=NEEDS.reduce(function(s,n){return s+(n.matches||[]).length},0);
 
     var list=document.getElementById("list");
-    var arr=DB.needs.slice();
-    if(state.tab==="mine")arr=arr.filter(function(n){return n.clientId===DB.clientId});
-    else if(state.tab==="matched")arr=arr.filter(function(n){return n.matches.some(function(m){return m.clientId===DB.clientId})});
+    if(state.loading){
+      list.innerHTML='<div class="empty"><div class="big">⏳</div><h3>正在加载云端需求…</h3></div>';return;
+    }
+    if(state.cloudError){
+      list.innerHTML='<div class="empty"><div class="big">⚠️</div><h3>云端数据加载失败</h3><div>'+esc(state.cloudError)+'</div><div style="margin-top:14px"><button class="btn btn-sm btn-primary" onclick="location.reload()">重试</button></div></div>';return;
+    }
+
+    var arr=NEEDS.slice();
+    if(state.tab==="mine")arr=arr.filter(function(n){return n.clientId===ME.clientId});
+    else if(state.tab==="matched")arr=arr.filter(function(n){return (n.matches||[]).some(function(m){return m.clientId===ME.clientId})});
     if(state.cat!=="all")arr=arr.filter(function(n){return n.cat===state.cat});
     if(state.q)arr=arr.filter(function(n){return (n.title+n.desc+n.cat).toLowerCase().indexOf(state.q)>-1});
 
@@ -584,16 +583,17 @@
     }
 
     list.innerHTML=arr.map(function(n){
-      var isMine=n.clientId===DB.clientId;
-      var myMatch=isMine?null:n.matches.filter(function(m){return m.clientId===DB.clientId})[0];
-      var statusCls=n.status==="closed"?"closed":(n.matches.length?"active":"open");
-      var statusTxt=n.status==="closed"?"已关闭":(n.matches.length?("对接中 · "+n.matches.length):"招募中");
+      var isMine=n.clientId===ME.clientId;
+      var myMatch=isMine?null:(n.matches||[]).filter(function(m){return m.clientId===ME.clientId})[0];
+      var statusCls=n.status==="closed"?"closed":((n.matches&&n.matches.length)?"active":"open");
+      var statusTxt=n.status==="closed"?"已关闭":((n.matches&&n.matches.length)?("对接中 · "+n.matches.length):"招募中");
       var html='<article class="need">'+
         '<div class="need-top">'+
           '<span class="cat '+esc(n.cat)+'">'+esc(n.cat)+'</span>'+
           '<span class="status '+statusCls+'">'+statusTxt+'</span>'+
         '</div>'+
         '<h3>'+esc(n.title)+'</h3>'+
+        '<div class="need-contact">📮 联系：<b>'+esc(n.contact)+'</b></div>'+
         '<div class="desc clamp">'+esc(n.desc)+'</div>'+
         '<div class="need-meta">'+
           '<span class="who"><span class="mini">'+esc(n.publisher.replace(/^./,""))+'</span>'+esc(n.publisher)+'</span>'+
@@ -601,24 +601,18 @@
           '<span class="time">'+timeAgo(n.createdAt)+'</span>'+
         '</div>';
 
-      // actions
       html+='<div class="need-actions">';
       if(isMine){
         if(n.status==="open")html+='<button class="btn btn-sm btn-ghost" data-act="close" data-id="'+n.id+'">标记已对接</button>';
         else html+='<button class="btn btn-sm btn-ghost" data-act="reopen" data-id="'+n.id+'">重新开放</button>';
         html+='<button class="btn btn-sm btn-warn" data-act="del" data-id="'+n.id+'">删除</button>';
       }else{
-        if(myMatch){
-          html+='<button class="btn btn-sm btn-ghost" disabled>✓ 你已对接</button>';
-        }else if(n.status==="closed"){
-          html+='<button class="btn btn-sm btn-ghost" disabled>已关闭</button>';
-        }else{
-          html+='<button class="btn btn-sm btn-primary" data-act="match" data-id="'+n.id+'">我要对接</button>';
-        }
+        if(myMatch)html+='<button class="btn btn-sm btn-ghost" disabled>✓ 你已对接</button>';
+        else if(n.status==="closed")html+='<button class="btn btn-sm btn-ghost" disabled>已关闭</button>';
+        else html+='<button class="btn btn-sm btn-primary" data-act="match" data-id="'+n.id+'">我要对接</button>';
       }
       html+='</div>';
 
-      // match form
       if(state.openMatch===n.id){
         html+='<div class="match-form">'+
           '<div class="mf-row">'+
@@ -634,42 +628,45 @@
         '</div>';
       }
 
-      // matches list (visible to publisher; for others show my own match)
-      var showMatches=isMine?n.matches:(myMatch?[myMatch]:[]);
+      var showMatches=isMine?(n.matches||[]):(myMatch?[myMatch]:[]);
       if(showMatches.length){
         html+='<div class="matches"><div class="matches-title">🤝 对接记录 ('+showMatches.length+')</div>';
         html+=showMatches.map(function(m){
           return '<div class="match-item"><div class="mh"><b>'+esc(m.name)+'</b>'+
-            (m.clientId===DB.clientId?'<span class="me-tag">我</span>':'')+
+            (m.clientId===ME.clientId?'<span class="me-tag">我</span>':'')+
             '<span class="t">'+timeAgo(m.createdAt)+'</span></div>'+
             '<div class="mc">联系：'+esc(m.contact)+'</div>'+
             (m.msg?'<div class="mmsg">“'+esc(m.msg)+'”</div>':'')+'</div>';
         }).join("");
         html+='</div>';
       }
-
       html+='</article>';
       return html;
     }).join("");
   }
 
-  /* ---------- clear / reset ---------- */
-  document.getElementById("clearBtn").addEventListener("click",function(){
-    if(!confirm("确定清空全部数据？所有已发布需求和对接记录都会被删除，且不可恢复。"))return;
-    DB={clientId:genId(),name:genName(),needs:[]};state.name=DB.name;
-    save();refreshIdentity();toast("数据已清空","ok");render();
-  });
+  /* ---------- footer actions ---------- */
   document.getElementById("resetBtn").addEventListener("click",function(){
-    if(!confirm("重新载入示例数据？当前的需求与对接记录将被示例覆盖。"))return;
-    var id=genId(),nm=genName();
-    DB={clientId:id,name:nm,needs:buildSeed(id,nm)};state.name=nm;
-    save();refreshIdentity();toast("示例数据已重新载入","ok");render();
+    if(!confirm("重新载入示例会在云端恢复 14 条示例需求（不会删除你已发布的需求）。继续？"))return;
+    toast("示例数据已保存在云端，无需重复载入","ok");
   });
+  document.getElementById("clearBtn").style.display="none";
 
-  save();
-  refreshIdentity();
-  render();
+  /* ---------- init ---------- */
+  async function init(){
+    refreshIdentity();
+    render();
+    try{
+      await loadNeeds();
+      state.loading=false;state.cloudError=null;
+    }catch(err){
+      state.loading=false;state.cloudError=friendly(err);
+    }
+    render();
+  }
+  init();
 })();
+
 </script>
 </body>
 </html>

@@ -22,6 +22,15 @@ python -m http.server 8000
 
 然后访问 `http://localhost:8000`。
 
+## 功能冒烟测试
+
+仓库附带 `test_smoke.js`，使用 jsdom 模拟真实浏览器操作，覆盖发布、对接、持久化、筛选搜索、XSS 防护等 20 项检查。运行方式：
+
+```bash
+npm install jsdom          # 首次需准备 jsdom 环境
+node test_smoke.js
+```
+
 ## 说明
 
 数据存储在当前浏览器中，不同浏览器/设备之间不共享。这是纯前端设计，简单易用、无需后端。

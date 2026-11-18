@@ -189,6 +189,8 @@
   .need h3{font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.4}
   .need .desc{font-size:13.5px;color:#475569;white-space:pre-wrap;word-break:break-word;flex:1}
   .need .desc.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .need-contact{font-size:12.5px;color:var(--sub);margin-top:10px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .need-contact b{color:#334155;font-weight:600}
   .need-meta{
     display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;
     border-top:1px dashed var(--line);font-size:12px;color:var(--sub);flex-wrap:wrap;
@@ -351,6 +353,7 @@
 
   <footer>
     数据仅保存在当前浏览器本地 · 纯前端实现
+    <button id="resetBtn">重新载入示例</button>
     <button id="clearBtn">清空全部数据</button>
   </footer>
 </main>
@@ -373,17 +376,99 @@
   function genId(){return Date.now().toString(36)+"-"+genCode(6)+"-"+rand(99999).toString(36)}
   function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 
+  // ---------- 示例数据（科技 / 金融 / 融资场景）----------
+  function buildSeed(myId,myName){
+    var now=Date.now(), MIN=60000, H=3600000, D=86400000;
+    function match(name,contact,msg,clientId,ago){return {id:genId(),name:name,contact:contact,msg:msg,clientId:clientId,createdAt:now-ago}}
+    function need(title,cat,desc,contact,publisher,clientId,ago,status,matches){
+      return {id:genId(),title:title,cat:cat,desc:desc,contact:contact,publisher:publisher,clientId:clientId,createdAt:now-ago,status:status,matches:matches};
+    }
+    var OTHER="seed-visitor-"+genCode(4);
+    return [
+      need("AI 大模型创业团队寻找资深后端工程师","找人",
+        "团队正在做行业大模型应用，需要一位有高并发系统经验的后端工程师，负责推理服务架构搭建。每周投入 2-3 天，可远程，项目制合作，核心成员有期权。",
+        "微信：ai_startup_hr","追风的北极熊_K7M2",OTHER,12*MIN,"open",[
+          match("漫步的鲸鱼_T3P9","微信：backend_dev_lee","5 年 Go/Python 经验，做过 LLM 推理优化，感兴趣","seed-v-"+genCode(4),7*MIN)
+        ]),
+      need("寻求低成本 GPU 算力资源（A100/H100）","找资源",
+        "多模态模型微调，用量约 500 卡时/周。希望对接高校实验室闲置算力或性价比高的算力平台，预算 2 万/月以内，长期合作优先。",
+        "邮箱：ops@model-lab.cn","闪耀的云朵_R5N1",OTHER,48*MIN,"open",[
+          match("爱发呆的松鼠_W8K2","微信：gpu_cloud_daily","可稳定提供 A100，价格好谈","seed-v-"+genCode(4),30*MIN),
+          match("好运的海豚_Y4H6","邮箱：compute@university.cn","实验室夜间算力闲置，可优惠","seed-v-"+genCode(4),20*MIN)
+        ]),
+      need("企业级 SaaS 产品寻找渠道合作伙伴","找合作",
+        "HR SaaS 产品已完成 A 轮，寻求有企业客户资源的渠道商、咨询公司联合推广，分成比例灵活，可提供全套售前支持。",
+        "微信：saas_bd_team","安静的狐狸_C9V3",OTHER,3*H,"open",[
+          match("佛系的小鹿_M2Q8","微信：consult_partner","我们服务 200+ 制造客户，可对接","seed-v-"+genCode(4),2*H)
+        ]),
+      need("Pre-A 轮融资寻求专注 FinTech 的机构对接","找资源",
+        "金融科技 To B 业务，年营收 800 万，同比增长 150%。寻求专注 FinTech 赛道的 VC 对接，FA 合作亦可，BP 与财务模型已备好。",
+        "邮箱：ceo@fintech-startup.cn",myName,myId,5*H,"open",[
+          match("勇敢的熊猫_Z6J4","微信：vc_fintech_wang","某头部基金 FinTech 组，可否发 BP？","seed-v-"+genCode(4),4*H),
+          match("温柔的小宇宙_Q1L7","邮箱：fa_partner@capital.cn","专业 FA，已帮多家同类公司完成融资","seed-v-"+genCode(4),3*H)
+        ]),
+      need("寻找有券商 IPO 经验的财务顾问","找人",
+        "公司计划明年申报创业板，需要熟悉 A 股 IPO 流程的财务顾问，兼职指导财务规范化与内控搭建，按项目付费。",
+        "微信：cfo_pre_ipo","熬夜的树懒_H3D5",OTHER,9*H,"open",[
+          match("自由的星星_P7W9","微信：fa_ipo_consultant","前券商保荐代表人，可兼职辅导","seed-v-"+genCode(4),6*H)
+        ]),
+      need("找人帮忙撰写商业计划书（BP）","找人",
+        "首次融资阶段，需要专业顾问梳理商业模式、打磨财务模型与融资叙事，优化 BP。预算 1-2 万，有成功融资案例优先。",
+        "微信：founder_bp_need","路人的柠檬_A5X2",OTHER,26*H,"open",[
+          match("闪耀的小怪兽_G4T8","微信：bp_writer_pro","写过 20+ 融资 BP，可先看样例","seed-v-"+genCode(4),22*H),
+          match("慢半拍的兔子_B6Y1","邮箱：business.writer@mail.cn","可协助财务模型部分","seed-v-"+genCode(4),20*H),
+          match("发光的北极熊_D8S3","微信：bp_fin_helper","做过科技赛道 BP，报价合理","seed-v-"+genCode(4),18*H)
+        ]),
+      need("供应链金融项目寻求银行资金方合作","找合作",
+        "产业互联网平台，掌握核心企业上下游真实贸易数据，希望与城商行/股份行合作供应链金融产品，平台提供数据风控，银行提供资金。",
+        "邮箱：biz@supply-chain-fin.cn","漫步的松鼠_E2N6",OTHER,2*D,"open",[
+          match("好运的云朵_F9C4","微信：bank_scf_team","某城商行供应链金融部，想了解风控模型","seed-v-"+genCode(4),1.5*D)
+        ]),
+      need("关于技术合伙人股权分配与成熟机制求建议","求建议",
+        "三人联合创始，我出资占 40%，两位技术合伙人各占 30%。担心后续融资稀释与激励问题，想请教动态股权/vesting 机制设计的常见做法。",
+        "微信：startup_equity_q","爱吃鱼的云朵_J7K2",OTHER,3*D,"open",[
+          match("佛系的蒲公英_L4M8","微信：vc_legal_advice","可分享标准 vesting 条款模板","seed-v-"+genCode(4),2.5*D)
+        ]),
+      need("产业资本对接：智能制造与工业视觉赛道","找合作",
+        "工业视觉检测企业，完成天使轮，寻求制造业上市公司 CVC 战略投资，期望在客户资源与产线落地层面形成协同。融资规模 3000 万。",
+        "邮箱：ir@industrial-vision.cn","自由的狐狸_N1R5",OTHER,4*D,"open",[
+          match("勇敢的鲸鱼_V3B7","微信：cvc_manufacturing","某上市制造企业战投部，可安排交流",myId,3*D),
+          match("追风的小鹿_S6T9","邮箱：industry.fund@capital.cn","制造业基金，关注工业视觉方向","seed-v-"+genCode(4),3*D)
+        ]),
+      need("寻找政府引导基金与长三角产业资本","找资源",
+        "硬科技项目，专注工业软件国产替代，寻求长三角地区政府引导基金、产业资本对接，落地有园区政策配套，融资 5000 万。",
+        "邮箱：funding@indie-soft.cn","温柔的柠檬_X8P2",OTHER,6*D,"closed",[
+          match("好运的小鹿_K2W7","微信：gov_fund_match","可对接苏州工业园区引导基金","seed-v-"+genCode(4),5*D)
+        ]),
+      need("区块链跨境支付寻找合规落地场景","找合作",
+        "合规稳定币结算技术方，寻找有跨境贸易场景的企业合作，解决中小外贸企业结算成本高、到账周期长的问题，合规优先。",
+        "邮箱：biz@chainpay.example","闪耀的星星_H5F3",OTHER,8*D,"open",[]),
+      need("算法工程师寻找兼职/顾问机会（风控方向）","找人",
+        "8 年风控算法经验，熟悉反欺诈、评分卡与贷中监控，现寻求金融科技公司的兼职或顾问机会，可远程，按项目或日结算。",
+        "微信：risk_algo_freelance","爱发呆的海豚_T9Q1",OTHER,10*D,"open",[]),
+      need("投资人寻求消费科技赛道优质项目源","找资源",
+        "某早期基金投资经理，重点关注消费科技、AI 应用方向，寻求优质项目源与创始人交流，欢迎 BP 投递，可快速反馈。",
+        "邮箱：investor.scope@vc.example","慢半拍的熊猫_B3M6",OTHER,12*D,"open",[]),
+      need("分享：科技初创公司融资节奏与估值经验","求建议",
+        "整理了一份早期科技公司融资节奏与估值谈判的经验笔记，欢迎交流探讨，也希望能听听大家在条款清单（Term Sheet）上的实操经验。",
+        "微信：founder_share_notes","快乐的松鼠_D7C4",OTHER,15*D,"open",[
+          match("自由的小盒子_A1B2","微信：early_stage_founder","很有启发，想交流下轮融资节奏","seed-v-"+genCode(4),14*D)
+        ])
+    ];
+  }
+
   function loadData(){
     try{
       var raw=localStorage.getItem(STORAGE_KEY);
       if(raw){var d=JSON.parse(raw);if(d&&Array.isArray(d.needs)){if(!d.clientId)d.clientId=genId();return d}}
     }catch(e){}
-    return {clientId:genId(),needs:[]};
+    var id=genId(),nm=genName();
+    return {clientId:id,name:nm,needs:buildSeed(id,nm)};
   }
   var DB=loadData();
   function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){toast("本地存储失败，请检查浏览器设置","err")}}
 
-  var state={name:genName(),tab:"all",cat:"all",q:"",openMatch:null};
+  var state={name:DB.name||genName(),tab:"all",cat:"all",q:"",openMatch:null};
 
   function timeAgo(ts){
     var d=Date.now()-ts,m=Math.floor(d/60000);
@@ -433,7 +518,7 @@
     document.getElementById("fTitle").value="";
     document.getElementById("fContact").value="";
     document.getElementById("fDesc").value="";
-    state.name=genName();refreshIdentity();
+    state.name=genName();DB.name=state.name;save();refreshIdentity();
     toast("需求发布成功","ok");
     render();
   });
@@ -568,12 +653,20 @@
     }).join("");
   }
 
-  /* ---------- clear ---------- */
+  /* ---------- clear / reset ---------- */
   document.getElementById("clearBtn").addEventListener("click",function(){
     if(!confirm("确定清空全部数据？所有已发布需求和对接记录都会被删除，且不可恢复。"))return;
-    DB={clientId:genId(),needs:[]};save();toast("数据已清空","ok");render();
+    DB={clientId:genId(),name:genName(),needs:[]};state.name=DB.name;
+    save();refreshIdentity();toast("数据已清空","ok");render();
+  });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if(!confirm("重新载入示例数据？当前的需求与对接记录将被示例覆盖。"))return;
+    var id=genId(),nm=genName();
+    DB={clientId:id,name:nm,needs:buildSeed(id,nm)};state.name=nm;
+    save();refreshIdentity();toast("示例数据已重新载入","ok");render();
   });
 
+  save();
   refreshIdentity();
   render();
 })();

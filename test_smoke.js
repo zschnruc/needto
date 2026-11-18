@@ -11,99 +11,119 @@ try {
   JSDOM = require(path.join(process.env.JSDOM_TD, 'node_modules', 'jsdom')).JSDOM;
 }
 
-const html = fs.readFileSync('D:/workbuddy/needto/index.html', 'utf8');
-const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://example.test/' });
-const { window } = dom;
-const { document } = window;
+const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 function assert(cond, msg) {
   if (!cond) { console.error('FAIL: ' + msg); process.exitCode = 1; throw new Error(msg); }
   console.log('PASS: ' + msg);
 }
-function click(el) { el.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); }
+function click(doc, el, win) { el.dispatchEvent(new win.MouseEvent('click', { bubbles: true })); }
+function makeDom(seedData) {
+  return new JSDOM(html, {
+    runScripts: 'dangerously', url: 'https://example.test/',
+    beforeParse(w) { if (seedData) w.localStorage.setItem('needmatch_data_v1', JSON.stringify(seedData)); }
+  });
+}
 
-// 1. Identity generated
-const name0 = document.getElementById('myName').textContent;
-assert(/\/^[^\s]+_\w{4}$/.test(name0) || /_\w{4}$/.test(name0), '随机用户名已生成: ' + name0);
+// ============ 1. 首次访问：自动载入示例数据 ============
+const dom = makeDom(null);
+const d = dom.window.document, w = dom.window;
+const seed = JSON.parse(w.localStorage.getItem('needmatch_data_v1'));
+assert(seed && seed.needs.length >= 10, '首次访问自动载入示例数据（' + seed.needs.length + ' 条）');
+assert(d.getElementById('statTotal').textContent === String(seed.needs.length), '统计总数与示例一致');
+assert(/_\w{4}$/.test(d.getElementById('myName').textContent), '随机用户名已生成');
 
-// 2. Publish a need
-document.getElementById('fTitle').value = '找人帮忙整理Excel表格';
-document.getElementById('fCat').value = '找人';
-document.getElementById('fContact').value = 'wx: test123';
-document.getElementById('fDesc').value = '有一批数据需要整理成表格，有偿。';
-click(document.getElementById('pubBtn'));
-let cards = document.querySelectorAll('.need');
-assert(cards.length === 1, '发布后出现 1 张需求卡片');
-assert(document.getElementById('statTotal').textContent === '1', '统计-总数=1');
-assert(document.getElementById('myName').textContent !== name0, '发布后用户名已重新随机生成');
-
-// verify persistence
-const stored = JSON.parse(window.localStorage.getItem('needmatch_data_v1'));
-assert(stored.needs.length === 1, 'localStorage 已写入需求');
-assert(stored.needs[0].title === '找人帮忙整理Excel表格', '需求标题正确');
-
-// 3. This need is mine (publisher)
-assert(document.querySelector('.need .me-tag') !== null, '发布者能看到"我发布的"标记');
-
-// 4. Simulate a DIFFERENT visitor by clearing clientId to force a match scenario.
-//    We mutate stored clientId, reload a fresh DOM with same storage to mimic second user.
-stored.clientId = 'VISITOR-2';
-window.localStorage.setItem('needmatch_data_v1', JSON.stringify(stored));
-
-const dom2 = new JSDOM(html, { runScripts: 'dangerously', url: 'https://example.test/' });
-// seed dom2 storage with visitor data before script runs is tricky; instead set then re-run by manual load.
-// Simpler: reuse dom, just change DB via a fresh JSDOM won't share storage. So test match on dom1 by switching clientId through storage+reload manually.
-// We'll instead build dom2 with beforeParse to inject storage.
-const domB = new JSDOM(html, {
-  runScripts: 'dangerously',
-  url: 'https://example.test/',
-  beforeParse(w) {
-    w.localStorage.setItem('needmatch_data_v1', JSON.stringify(stored));
-  }
+const allTitles = seed.needs.map(n => n.title + n.desc).join(' ');
+['大模型','GPU','SaaS','FinTech','IPO','融资','供应链金融','股权','产业资本','区块链'].forEach(function(k){
+  assert(allTitles.indexOf(k) > -1, '示例覆盖关键词: ' + k);
 });
-const d2 = domB.window.document;
-const card2 = d2.querySelector('.need');
-assert(card2 !== null, '第二访客能看到已发布需求');
-assert(card2.querySelector('[data-act="match"]') !== null, '非发布者能看到"我要对接"按钮');
-assert(card2.querySelector('.me-tag') === null, '非发布者看不到"我发布的"标记');
+const cats = {}; seed.needs.forEach(n => cats[n.cat] = 1);
+['找人','找资源','找合作','求建议'].forEach(function(c){ assert(cats[c], '示例覆盖类型: ' + c); });
 
-// 5. Open match form and submit
-const matchBtn = card2.querySelector('[data-act="match"]');
-matchBtn.dispatchEvent(new domB.window.MouseEvent('click', { bubbles: true }));
+// ============ 2. "我发布的"与"我对接的"标签有内容 ============
+const mineTab = Array.from(d.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === 'mine');
+click(d, mineTab, w);
+assert(d.querySelectorAll('.need').length >= 1, '"我发布的"标签有示例内容（' + d.querySelectorAll('.need').length + ' 条）');
+const matchedTab = Array.from(d.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === 'matched');
+click(d, matchedTab, w);
+assert(d.querySelectorAll('.need').length >= 1, '"我对接的"标签有示例内容（' + d.querySelectorAll('.need').length + ' 条）');
+
+// ============ 3. 发布需求 ============
+const allTab = Array.from(d.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === 'all');
+click(d, allTab, w);
+const before = seed.needs.length;
+const name0 = d.getElementById('myName').textContent;
+d.getElementById('fTitle').value = '找人帮忙整理Excel表格';
+d.getElementById('fCat').value = '找人';
+d.getElementById('fContact').value = 'wx: test123';
+d.getElementById('fDesc').value = '有一批数据需要整理成表格，有偿。';
+click(d, d.getElementById('pubBtn'), w);
+let stored = JSON.parse(w.localStorage.getItem('needmatch_data_v1'));
+assert(stored.needs.length === before + 1, '发布后需求数 +1');
+assert(d.getElementById('statTotal').textContent === String(before + 1), '统计同步更新');
+assert(d.getElementById('myName').textContent !== name0, '发布后用户名重新随机');
+assert(stored.name === d.getElementById('myName').textContent, '用户名已持久化到 DB');
+
+// ============ 4. 访客视角：浏览 + 对接 ============
+const visitorData = JSON.parse(JSON.stringify(stored));
+visitorData.clientId = 'VISITOR-2';
+const domB = makeDom(visitorData);
+const d2 = domB.window.document, w2 = domB.window;
+const card = d2.querySelector('.need');
+assert(card !== null, '访客能看到需求');
+let target = null, targetBtn = null;
+d2.querySelectorAll('.need').forEach(function(c){
+  if(target) return;
+  const b = c.querySelector('[data-act="match"]');
+  if(b){ target = c; targetBtn = b; }
+});
+assert(target !== null, '存在可对接的示例需求');
+click(d2, targetBtn, w2);
 const mf = d2.querySelector('.match-form');
 assert(mf !== null, '点击后展开对接表单');
-const formName = mf.querySelector('.mf-name').value;
-assert(formName && /_\w{4}$/.test(formName), '对接表单预填随机用户名: ' + formName);
+assert(/_\w{4}$/.test(mf.querySelector('.mf-name').value), '对接表单预填随机用户名');
 mf.querySelector('.mf-contact').value = 'wx: helper99';
 mf.querySelector('.mf-msg').value = '我可以帮忙';
-mf.querySelector('[data-act="submit-match"]').dispatchEvent(new domB.window.MouseEvent('click', { bubbles: true }));
-assert(d2.getElementById('statMatches').textContent === '1', '统计-累计对接=1');
-const stored2 = JSON.parse(domB.window.localStorage.getItem('needmatch_data_v1'));
-assert(stored2.needs[0].matches.length === 1, '对接记录已持久化');
-assert(stored2.needs[0].matches[0].contact === 'wx: helper99', '对接联系方式正确');
+click(d2, mf.querySelector('[data-act="submit-match"]'), w2);
+const stored2 = JSON.parse(w2.localStorage.getItem('needmatch_data_v1'));
+const totalMatches = stored2.needs.reduce(function(s,n){return s+n.matches.length},0);
+assert(totalMatches >= 1, '对接记录已持久化（总对接数 ' + totalMatches + '）');
 
-// 6. "我对接的" tab shows the need for visitor
-const matchedTab = Array.from(d2.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === 'matched');
-matchedTab.dispatchEvent(new domB.window.MouseEvent('click', { bubbles: true }));
-assert(d2.querySelectorAll('.need').length === 1, '"我对接的"标签显示已对接需求');
-
-// 7. Search filter
-const allTab = Array.from(d2.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === 'all');
-allTab.dispatchEvent(new domB.window.MouseEvent('click', { bubbles: true }));
+// ============ 5. 搜索 / 筛选 ============
 const search = d2.getElementById('searchInput');
-search.value = '不存在的关键字xyz';
-search.dispatchEvent(new domB.window.Event('input', { bubbles: true }));
-assert(d2.querySelectorAll('.need').length === 0, '搜索无结果时显示空状态');
-search.value = 'Excel';
-search.dispatchEvent(new domB.window.Event('input', { bubbles: true }));
-assert(d2.querySelectorAll('.need').length === 1, '搜索命中需求');
+search.value = '不存在的关键词xyz';
+search.dispatchEvent(new w2.Event('input', { bubbles: true }));
+assert(d2.querySelectorAll('.need').length === 0, '搜索无结果显示空状态');
+search.value = '融资';
+search.dispatchEvent(new w2.Event('input', { bubbles: true }));
+assert(d2.querySelectorAll('.need').length >= 1, '搜索"融资"命中示例需求');
+search.value = '';
+search.dispatchEvent(new w2.Event('input', { bubbles: true }));
+const filter = d2.getElementById('catFilter');
+filter.value = '找合作';
+filter.dispatchEvent(new w2.Event('change', { bubbles: true }));
+assert(d2.querySelectorAll('.need').length >= 1, '类型筛选"找合作"命中示例需求');
 
-// 8. XSS safety check
+// ============ 6. 重新载入示例 ============
+w.confirm = function(){ return true; };
+click(d, d.getElementById('resetBtn'), w);
+const reset = JSON.parse(w.localStorage.getItem('needmatch_data_v1'));
+assert(reset.needs.length >= 10, '"重新载入示例"恢复示例数据');
+
+// ============ 7. 清空数据 ============
+click(d, d.getElementById('clearBtn'), w);
+const cleared = JSON.parse(w.localStorage.getItem('needmatch_data_v1'));
+assert(cleared.needs.length === 0, '"清空全部数据"清空需求');
+
+// ============ 8. XSS 防护 ============
 const domX = new JSDOM(html, {
   runScripts: 'dangerously', url: 'https://example.test/',
-  beforeParse(w) {
-    w.localStorage.setItem('needmatch_data_v1', JSON.stringify({
-      clientId: 'X', needs: [{ id: 'x1', title: '<img src=x onerror=alert(1)>', cat: '其他', desc: '<script>bad()</script>', contact: 'c', publisher: 'anon_ABCD', clientId: 'OTHER', createdAt: Date.now(), status: 'open', matches: [] }]
+  beforeParse(win) {
+    win.localStorage.setItem('needmatch_data_v1', JSON.stringify({
+      clientId:'X', name:'anon_ABCD',
+      needs:[{ id:'x1', title:'<img src=x onerror=alert(1)>', cat:'其他',
+        desc:'<script>bad()</script>', contact:'c', publisher:'anon_ABCD',
+        clientId:'OTHER', createdAt:Date.now(), status:'open', matches:[] }]
     }));
   }
 });

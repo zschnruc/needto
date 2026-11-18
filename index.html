@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需对接 · 免注册需求对接工具</title>
+<style>
+  :root{
+    --primary:#4f46e5;
+    --primary-d:#4338ca;
+    --primary-l:#eef2ff;
+    --accent:#f59e0b;
+    --ok:#16a34a;
+    --ink:#1e293b;
+    --sub:#64748b;
+    --line:#e8edf5;
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --shadow:0 4px 20px rgba(30,41,59,.06);
+    --shadow-h:0 10px 32px rgba(79,70,229,.12);
+    --r:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select,textarea{font-family:inherit;font-size:inherit}
+  button{cursor:pointer}
+  a{color:var(--primary);text-decoration:none}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:rgba(255,255,255,.9);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-in{
+    max-width:1080px;margin:0 auto;padding:12px 20px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-logo{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    background:linear-gradient(135deg,var(--primary),#7c6cf5);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:800;font-size:18px;
+    box-shadow:0 6px 14px rgba(79,70,229,.3);
+  }
+  .brand-name{font-weight:800;font-size:18px;letter-spacing:.5px}
+  .brand-sub{font-size:11px;color:var(--sub);margin-top:-2px}
+  .identity{display:flex;align-items:center;gap:8px}
+  .identity-label{font-size:12px;color:var(--sub);display:none}
+  .name-chip{
+    display:flex;align-items:center;gap:8px;
+    background:var(--primary-l);border:1px solid #dfe4ff;
+    padding:6px 8px 6px 12px;border-radius:999px;
+    font-size:13px;font-weight:600;color:var(--primary-d);
+  }
+  .name-chip .avatar{
+    width:26px;height:26px;border-radius:50%;flex:none;
+    background:linear-gradient(135deg,#fdba74,#f97316);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;
+  }
+  .icon-btn{
+    width:26px;height:26px;border:none;border-radius:50%;
+    background:#fff;color:var(--primary);font-size:14px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);transition:transform .2s,background .2s;
+  }
+  .icon-btn:hover{transform:rotate(40deg);background:#f8fafc}
+
+  /* ---------- Layout ---------- */
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+  .hero{margin-bottom:22px}
+  .hero h1{font-size:26px;font-weight:800;letter-spacing:.3px}
+  .hero p{color:var(--sub);font-size:14px;margin-top:4px}
+  .stats{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .stat{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:10px 16px;min-width:104px;box-shadow:var(--shadow);
+  }
+  .stat b{font-size:22px;font-weight:800;display:block;line-height:1.2}
+  .stat span{font-size:12px;color:var(--sub)}
+  .stat.c1 b{color:var(--primary)}
+  .stat.c2 b{color:var(--ok)}
+  .stat.c3 b{color:var(--accent)}
+
+  /* ---------- Publish card ---------- */
+  .panel{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);box-shadow:var(--shadow);
+  }
+  .publish{margin-bottom:26px;overflow:hidden}
+  .publish-head{
+    padding:16px 20px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);cursor:pointer;user-select:none;
+  }
+  .publish-head h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .publish-head h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .publish-head .hint{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .chevron{transition:transform .25s;color:var(--sub)}
+  .publish.collapsed .chevron{transform:rotate(180deg)}
+  .publish-body{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .publish.collapsed .publish-body{display:none}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:13px;font-weight:600;color:#334155}
+  .field .req{color:#ef4444}
+  .field input,.field select,.field textarea{
+    width:100%;border:1px solid #dbe2ee;border-radius:10px;
+    padding:10px 12px;background:#fff;color:var(--ink);
+    outline:none;transition:border .2s,box-shadow .2s;font-size:14px;
+  }
+  .field textarea{resize:vertical;min-height:74px}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12);
+  }
+  .publish-foot{
+    grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    border-top:1px dashed var(--line);padding-top:16px;
+  }
+  .as-name{font-size:12px;color:var(--sub)}
+  .as-name b{color:var(--primary-d)}
+  .btn{
+    border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;
+    transition:transform .15s,box-shadow .2s,background .2s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn-primary{
+    background:var(--primary);color:#fff;
+    box-shadow:0 6px 16px rgba(79,70,229,.28);
+  }
+  .btn-primary:hover{background:var(--primary-d);box-shadow:0 8px 20px rgba(79,70,229,.36)}
+  .btn-ghost{background:#f1f5f9;color:#475569}
+  .btn-ghost:hover{background:#e2e8f0}
+  .btn-sm{padding:7px 13px;font-size:13px;border-radius:9px}
+  .btn-warn{background:#fef2f2;color:#dc2626}
+  .btn-warn:hover{background:#fee2e2}
+
+  /* ---------- Board ---------- */
+  .board-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .tabs{display:flex;gap:4px;background:#e9edf5;padding:4px;border-radius:11px}
+  .tab{
+    border:none;background:transparent;color:var(--sub);
+    padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;
+    transition:all .2s;
+  }
+  .tab.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(30,41,59,.08)}
+  .tools{display:flex;gap:8px;flex-wrap:wrap}
+  .search{position:relative}
+  .search input{
+    border:1px solid #dbe2ee;border-radius:10px;padding:9px 12px 9px 34px;
+    width:210px;outline:none;background:#fff;font-size:14px;transition:border .2s,box-shadow .2s;
+  }
+  .search input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+  .search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px}
+  select.filter{
+    border:1px solid #dbe2ee;border-radius:10px;padding:9px 12px;background:#fff;
+    color:var(--ink);outline:none;font-size:14px;
+  }
+
+  /* ---------- Need cards ---------- */
+  .list{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .need{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px;box-shadow:var(--shadow);transition:transform .18s,box-shadow .18s;
+    display:flex;flex-direction:column;
+  }
+  .need:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+  .need-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .cat{
+    font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;
+    background:var(--primary-l);color:var(--primary-d);
+  }
+  .cat.找人{background:#eef2ff;color:#4f46e5}
+  .cat.找资源{background:#ecfdf5;color:#059669}
+  .cat.找合作{background:#fff7ed;color:#ea580c}
+  .cat.求建议{background:#f0f9ff;color:#0284c7}
+  .cat.其他{background:#f1f5f9;color:#475569}
+  .status{
+    font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:auto;
+    background:#f1f5f9;color:#64748b;
+  }
+  .status.open{background:#ecfdf5;color:#059669}
+  .status.active{background:#fffbeb;color:#d97706}
+  .status.closed{background:#f1f5f9;color:#94a3b8}
+  .need h3{font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.4}
+  .need .desc{font-size:13.5px;color:#475569;white-space:pre-wrap;word-break:break-word;flex:1}
+  .need .desc.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .need-meta{
+    display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;
+    border-top:1px dashed var(--line);font-size:12px;color:var(--sub);flex-wrap:wrap;
+  }
+  .need-meta .who{display:flex;align-items:center;gap:6px;color:#334155;font-weight:600}
+  .need-meta .who .mini{
+    width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#a5b4fc,#818cf8);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;
+  }
+  .need-meta .me-tag{background:#fef3c7;color:#b45309;font-size:10px;padding:1px 7px;border-radius:999px;font-weight:700}
+  .need-meta .time{margin-left:auto}
+  .need-actions{display:flex;gap:8px;margin-top:14px}
+  .need-actions .btn{flex:1}
+
+  /* matches */
+  .matches{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .matches-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .match-item{
+    background:#f8fafc;border:1px solid var(--line);border-radius:10px;
+    padding:9px 12px;margin-bottom:8px;font-size:13px;
+  }
+  .match-item .mh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .match-item .mh b{color:var(--ink)}
+  .match-item .mh .t{color:var(--sub);font-size:11px;margin-left:auto}
+  .match-item .mc{color:#475569;margin-top:4px;word-break:break-word}
+  .match-item .mmsg{color:var(--sub);font-size:12px;margin-top:3px;font-style:italic}
+  .match-form{
+    margin-top:12px;background:var(--primary-l);border:1px dashed #c7d2fe;
+    border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;
+  }
+  .match-form .mf-row{display:flex;gap:10px}
+  .match-form .mf-row>*{flex:1}
+  .match-form input,.match-form textarea{
+    width:100%;border:1px solid #dbe2ee;border-radius:9px;padding:8px 10px;
+    outline:none;background:#fff;font-size:13px;transition:border .2s,box-shadow .2s;
+  }
+  .match-form input:focus,.match-form textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .match-form textarea{resize:vertical;min-height:54px}
+  .match-form .mf-actions{display:flex;gap:8px;justify-content:flex-end}
+
+  /* empty */
+  .empty{
+    grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--sub);
+  }
+  .empty .big{font-size:46px;margin-bottom:10px;opacity:.6}
+  .empty h3{color:var(--ink);font-size:16px;margin-bottom:4px}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .toast{
+    background:#1e293b;color:#fff;padding:11px 20px;border-radius:10px;font-size:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);animation:tin .25s ease;display:flex;align-items:center;gap:8px;
+  }
+  .toast.ok{background:#16a34a}
+  .toast.err{background:#dc2626}
+  @keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  footer{text-align:center;color:#94a3b8;font-size:12px;margin-top:44px}
+  footer button{background:none;border:none;color:#94a3b8;font-size:12px;text-decoration:underline;margin-left:8px}
+  footer button:hover{color:#ef4444}
+
+  @media(max-width:760px){
+    .list,.publish-body{grid-template-columns:1fr}
+    .search input{width:150px}
+    .hero h1{font-size:22px}
+    .identity-label{display:none}
+    .match-form .mf-row{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="brand-logo">需</div>
+      <div>
+        <div class="brand-name">需对接</div>
+        <div class="brand-sub">免注册 · 匿名发布 · 快速对接</div>
+      </div>
+    </div>
+    <div class="identity">
+      <span class="identity-label">我的身份</span>
+      <div class="name-chip">
+        <span class="avatar" id="myAvatar">匿</span>
+        <span id="myName">加载中…</span>
+        <button class="icon-btn" id="regenBtn" title="换一个随机用户名" aria-label="换一个随机用户名">↻</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>让需求被看见，让对接更简单</h1>
+    <p>无需注册，发布与对接均使用随机用户名，保护隐私，开箱即用。</p>
+    <div class="stats">
+      <div class="stat c1"><b id="statTotal">0</b><span>全部需求</span></div>
+      <div class="stat c2"><b id="statOpen">0</b><span>招募中</span></div>
+      <div class="stat c3"><b id="statMatches">0</b><span>累计对接</span></div>
+    </div>
+  </section>
+
+  <section class="panel publish" id="publishCard">
+    <div class="publish-head" id="publishHead">
+      <h2><span class="dot"></span>发布新需求</h2>
+      <div class="hint">点击折叠 / 展开 <span class="chevron">⌃</span></div>
+    </div>
+    <div class="publish-body">
+      <div class="field full">
+        <label for="fTitle">需求标题 <span class="req">*</span></label>
+        <input id="fTitle" maxlength="60" placeholder="一句话说清你需要什么，例如：找一位会 Excel 的朋友帮忙整理表格">
+      </div>
+      <div class="field">
+        <label for="fCat">需求类型 <span class="req">*</span></label>
+        <select id="fCat">
+          <option value="找人">找人</option>
+          <option value="找资源">找资源</option>
+          <option value="找合作">找合作</option>
+          <option value="求建议">求建议</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fContact">联系方式 <span class="req">*</span></label>
+        <input id="fContact" maxlength="80" placeholder="微信 / 手机 / 邮箱等，方便对方联系你">
+      </div>
+      <div class="field full">
+        <label for="fDesc">详细描述 <span class="req">*</span></label>
+        <textarea id="fDesc" maxlength="500" placeholder="补充需求的背景、要求、时间等，让对接更精准…"></textarea>
+      </div>
+      <div class="publish-foot">
+        <div class="as-name">将以随机用户名 <b id="pubName">—</b> 发布（<a href="#" id="pubRegen">换一个</a>）</div>
+        <button class="btn btn-primary" id="pubBtn">发布需求</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="board">
+    <div class="board-head">
+      <div class="tabs">
+        <button class="tab active" data-tab="all">需求大厅</button>
+        <button class="tab" data-tab="mine">我发布的</button>
+        <button class="tab" data-tab="matched">我对接的</button>
+      </div>
+      <div class="tools">
+        <div class="search"><span class="ico">🔍</span><input id="searchInput" placeholder="搜索需求…"></div>
+        <select class="filter" id="catFilter">
+          <option value="all">全部类型</option>
+          <option value="找人">找人</option>
+          <option value="找资源">找资源</option>
+          <option value="找合作">找合作</option>
+          <option value="求建议">求建议</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <footer>
+    数据仅保存在当前浏览器本地 · 纯前端实现
+    <button id="clearBtn">清空全部数据</button>
+  </footer>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "needmatch_data_v1";
+
+  var ADJ = ["神秘的","追风的","安静的","快乐的","勇敢的","漫步的","闪耀的","温柔的","自由的","发光的","熬夜的","爱吃鱼的","爱发呆的","慢半拍的","好运的","佛系的","努力的","路人甲的"];
+  var NOUN = ["熊猫","鲸鱼","狐狸","兔子","海豚","树懒","云朵","星星","柠檬","松鼠","小鹿","北极熊","柠檬精","小怪兽","蒲公英","小宇宙","小盒子","咸鱼"];
+  var CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  function rand(n){return Math.floor(Math.random()*n)}
+  function genCode(len){var s="";for(var i=0;i<len;i++)s+=CHARS[rand(CHARS.length)];return s}
+  function genName(){return ADJ[rand(ADJ.length)]+NOUN[rand(NOUN.length)]+"_"+genCode(4)}
+  function genId(){return Date.now().toString(36)+"-"+genCode(6)+"-"+rand(99999).toString(36)}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+
+  function loadData(){
+    try{
+      var raw=localStorage.getItem(STORAGE_KEY);
+      if(raw){var d=JSON.parse(raw);if(d&&Array.isArray(d.needs)){if(!d.clientId)d.clientId=genId();return d}}
+    }catch(e){}
+    return {clientId:genId(),needs:[]};
+  }
+  var DB=loadData();
+  function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB))}catch(e){toast("本地存储失败，请检查浏览器设置","err")}}
+
+  var state={name:genName(),tab:"all",cat:"all",q:"",openMatch:null};
+
+  function timeAgo(ts){
+    var d=Date.now()-ts,m=Math.floor(d/60000);
+    if(m<1)return "刚刚";
+    if(m<60)return m+"分钟前";
+    var h=Math.floor(m/60);if(h<24)return h+"小时前";
+    var day=Math.floor(h/24);if(day<30)return day+"天前";
+    return new Date(ts).toLocaleDateString("zh-CN");
+  }
+
+  function toast(msg,type){
+    var box=document.getElementById("toast");
+    var el=document.createElement("div");
+    el.className="toast"+(type?" "+type:"");
+    el.textContent=(type==="ok"?"✓ ":type==="err"?"✕ ":"")+msg;
+    box.appendChild(el);
+    setTimeout(function(){el.style.opacity="0";el.style.transform="translateY(8px)";el.style.transition="all .3s";setTimeout(function(){el.remove()},300)},2200);
+  }
+
+  /* ---------- identity ---------- */
+  function refreshIdentity(){
+    document.getElementById("myName").textContent=state.name;
+    document.getElementById("pubName").textContent=state.name;
+    document.getElementById("myAvatar").textContent=state.name.replace(/^./,"");
+  }
+  document.getElementById("regenBtn").addEventListener("click",function(){state.name=genName();refreshIdentity();toast("已换一个新的随机用户名","ok")});
+  document.getElementById("pubRegen").addEventListener("click",function(e){e.preventDefault();state.name=genName();refreshIdentity();toast("已换一个新的随机用户名","ok")});
+
+  /* ---------- publish ---------- */
+  document.getElementById("publishHead").addEventListener("click",function(){
+    document.getElementById("publishCard").classList.toggle("collapsed");
+  });
+  document.getElementById("pubBtn").addEventListener("click",function(){
+    var title=document.getElementById("fTitle").value.trim();
+    var cat=document.getElementById("fCat").value;
+    var contact=document.getElementById("fContact").value.trim();
+    var desc=document.getElementById("fDesc").value.trim();
+    if(!title){toast("请填写需求标题","err");return}
+    if(!contact){toast("请填写联系方式","err");return}
+    if(!desc){toast("请填写详细描述","err");return}
+    DB.needs.unshift({
+      id:genId(),title:title,cat:cat,desc:desc,contact:contact,
+      publisher:state.name,clientId:DB.clientId,createdAt:Date.now(),
+      status:"open",matches:[]
+    });
+    save();
+    document.getElementById("fTitle").value="";
+    document.getElementById("fContact").value="";
+    document.getElementById("fDesc").value="";
+    state.name=genName();refreshIdentity();
+    toast("需求发布成功","ok");
+    render();
+  });
+
+  /* ---------- tabs / filters ---------- */
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.addEventListener("click",function(){
+      document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active")});
+      t.classList.add("active");state.tab=t.getAttribute("data-tab");state.openMatch=null;render();
+    });
+  });
+  document.getElementById("searchInput").addEventListener("input",function(e){state.q=e.target.value.trim().toLowerCase();render()});
+  document.getElementById("catFilter").addEventListener("change",function(e){state.cat=e.target.value;render()});
+
+  /* ---------- actions (event delegation) ---------- */
+  document.getElementById("list").addEventListener("click",function(e){
+    var el=e.target.closest("[data-act]");if(!el)return;
+    var act=el.getAttribute("data-act"),id=el.getAttribute("data-id");
+    if(act==="match"){state.openMatch=(state.openMatch===id?null:id);render()}
+    else if(act==="cancel-match"){state.openMatch=null;render()}
+    else if(act==="submit-match"){submitMatch(id,el)}
+    else if(act==="close"){closeNeed(id)}
+    else if(act==="reopen"){reopenNeed(id)}
+    else if(act==="del"){delNeed(id)}
+    else if(act==="regen-match"){var inp=el.parentNode.querySelector(".mf-name");if(inp){inp.value=genName()}}
+  });
+
+  function findNeed(id){for(var i=0;i<DB.needs.length;i++)if(DB.needs[i].id===id)return DB.needs[i];return null}
+
+  function submitMatch(id,btn){
+    var n=findNeed(id);if(!n)return;
+    var form=btn.closest(".match-form");
+    var name=form.querySelector(".mf-name").value.trim();
+    var contact=form.querySelector(".mf-contact").value.trim();
+    var msg=form.querySelector(".mf-msg").value.trim();
+    if(!name){toast("请填写你的称呼","err");return}
+    if(!contact){toast("请填写联系方式","err");return}
+    n.matches.unshift({id:genId(),name:name,contact:contact,msg:msg,clientId:DB.clientId,createdAt:Date.now()});
+    save();state.openMatch=null;toast("对接成功，需求方可以看到你的信息了","ok");render();
+  }
+  function closeNeed(id){var n=findNeed(id);if(n){n.status="closed";save();toast("已标记为已对接","ok");render()}}
+  function reopenNeed(id){var n=findNeed(id);if(n){n.status="open";save();toast("已重新开放该需求","ok");render()}}
+  function delNeed(id){if(!confirm("确定删除这条需求？此操作不可恢复。"))return;DB.needs=DB.needs.filter(function(n){return n.id!==id});save();toast("已删除","ok");render()}
+
+  /* ---------- render ---------- */
+  function render(){
+    // stats
+    document.getElementById("statTotal").textContent=DB.needs.length;
+    document.getElementById("statOpen").textContent=DB.needs.filter(function(n){return n.status==="open"}).length;
+    document.getElementById("statMatches").textContent=DB.needs.reduce(function(s,n){return s+n.matches.length},0);
+
+    var list=document.getElementById("list");
+    var arr=DB.needs.slice();
+    if(state.tab==="mine")arr=arr.filter(function(n){return n.clientId===DB.clientId});
+    else if(state.tab==="matched")arr=arr.filter(function(n){return n.matches.some(function(m){return m.clientId===DB.clientId})});
+    if(state.cat!=="all")arr=arr.filter(function(n){return n.cat===state.cat});
+    if(state.q)arr=arr.filter(function(n){return (n.title+n.desc+n.cat).toLowerCase().indexOf(state.q)>-1});
+
+    if(!arr.length){
+      list.innerHTML='<div class="empty"><div class="big">🗂️</div><h3>这里还没有需求</h3><div>'+
+        (state.tab==="all"?'发布第一个需求，开始对接吧':'切换到「需求大厅」看看其他需求')+'</div></div>';
+      return;
+    }
+
+    list.innerHTML=arr.map(function(n){
+      var isMine=n.clientId===DB.clientId;
+      var myMatch=isMine?null:n.matches.filter(function(m){return m.clientId===DB.clientId})[0];
+      var statusCls=n.status==="closed"?"closed":(n.matches.length?"active":"open");
+      var statusTxt=n.status==="closed"?"已关闭":(n.matches.length?("对接中 · "+n.matches.length):"招募中");
+      var html='<article class="need">'+
+        '<div class="need-top">'+
+          '<span class="cat '+esc(n.cat)+'">'+esc(n.cat)+'</span>'+
+          '<span class="status '+statusCls+'">'+statusTxt+'</span>'+
+        '</div>'+
+        '<h3>'+esc(n.title)+'</h3>'+
+        '<div class="desc clamp">'+esc(n.desc)+'</div>'+
+        '<div class="need-meta">'+
+          '<span class="who"><span class="mini">'+esc(n.publisher.replace(/^./,""))+'</span>'+esc(n.publisher)+'</span>'+
+          (isMine?'<span class="me-tag">我发布的</span>':'')+
+          '<span class="time">'+timeAgo(n.createdAt)+'</span>'+
+        '</div>';
+
+      // actions
+      html+='<div class="need-actions">';
+      if(isMine){
+        if(n.status==="open")html+='<button class="btn btn-sm btn-ghost" data-act="close" data-id="'+n.id+'">标记已对接</button>';
+        else html+='<button class="btn btn-sm btn-ghost" data-act="reopen" data-id="'+n.id+'">重新开放</button>';
+        html+='<button class="btn btn-sm btn-warn" data-act="del" data-id="'+n.id+'">删除</button>';
+      }else{
+        if(myMatch){
+          html+='<button class="btn btn-sm btn-ghost" disabled>✓ 你已对接</button>';
+        }else if(n.status==="closed"){
+          html+='<button class="btn btn-sm btn-ghost" disabled>已关闭</button>';
+        }else{
+          html+='<button class="btn btn-sm btn-primary" data-act="match" data-id="'+n.id+'">我要对接</button>';
+        }
+      }
+      html+='</div>';
+
+      // match form
+      if(state.openMatch===n.id){
+        html+='<div class="match-form">'+
+          '<div class="mf-row">'+
+            '<input class="mf-name" maxlength="40" value="'+esc(genName())+'" placeholder="你的称呼（随机生成）">'+
+            '<button type="button" class="btn btn-sm btn-ghost" data-act="regen-match" data-id="'+n.id+'" style="flex:0 0 auto">换一个</button>'+
+          '</div>'+
+          '<input class="mf-contact" maxlength="80" placeholder="你的联系方式（微信 / 手机 / 邮箱）">'+
+          '<textarea class="mf-msg" maxlength="200" placeholder="给需求方留言（选填）"></textarea>'+
+          '<div class="mf-actions">'+
+            '<button class="btn btn-sm btn-ghost" data-act="cancel-match" data-id="'+n.id+'">取消</button>'+
+            '<button class="btn btn-sm btn-primary" data-act="submit-match" data-id="'+n.id+'">提交对接</button>'+
+          '</div>'+
+        '</div>';
+      }
+
+      // matches list (visible to publisher; for others show my own match)
+      var showMatches=isMine?n.matches:(myMatch?[myMatch]:[]);
+      if(showMatches.length){
+        html+='<div class="matches"><div class="matches-title">🤝 对接记录 ('+showMatches.length+')</div>';
+        html+=showMatches.map(function(m){
+          return '<div class="match-item"><div class="mh"><b>'+esc(m.name)+'</b>'+
+            (m.clientId===DB.clientId?'<span class="me-tag">我</span>':'')+
+            '<span class="t">'+timeAgo(m.createdAt)+'</span></div>'+
+            '<div class="mc">联系：'+esc(m.contact)+'</div>'+
+            (m.msg?'<div class="mmsg">“'+esc(m.msg)+'”</div>':'')+'</div>';
+        }).join("");
+        html+='</div>';
+      }
+
+      html+='</article>';
+      return html;
+    }).join("");
+  }
+
+  /* ---------- clear ---------- */
+  document.getElementById("clearBtn").addEventListener("click",function(){
+    if(!confirm("确定清空全部数据？所有已发布需求和对接记录都会被删除，且不可恢复。"))return;
+    DB={clientId:genId(),needs:[]};save();toast("数据已清空","ok");render();
+  });
+
+  refreshIdentity();
+  render();
+})();
+</script>
+</body>
+</html>
